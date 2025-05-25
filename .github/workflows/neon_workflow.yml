@@ -25,14 +25,6 @@ jobs:
       - name: Get branch name
         id: branch_name
         uses: tj-actions/branch-names@v8
-      - name: Delete Existing Neon Branch If It Exists
-        id: delete_existing_neon_branch
-        uses: neondatabase/delete-branch-action@v3
-        continue-on-error: true
-        with:
-          project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch: preview/pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
-          api_key: ${{ secrets.NEON_API_KEY }}
 
   create_neon_branch:
     name: Create Neon Branch
