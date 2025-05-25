@@ -8,6 +8,10 @@ on:
       - synchronize
       - closed
 
+permissions:
+  contents: read
+  pull-requests: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
 
@@ -35,12 +39,15 @@ jobs:
       || github.event.action == 'reopened')
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
       - name: Create Neon Branch
         id: create_neon_branch
-        uses: neondatabase/create-branch-action@v5
+        uses: neondatabase/create-branch-action@v6
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
           branch_name: preview/pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
+          role: neondb_owner
           api_key: ${{ secrets.NEON_API_KEY }}
 
   # The step above creates a new Neon branch.
@@ -52,12 +59,12 @@ jobs:
   # password for your database.
   # For example, you can uncomment the lines below to run a database migration command:
       - name: Run Migrations
-        run: npm run db:migrate
+        run: npm install --ci && npm run db:migrate
         env:
           # to use pooled connection
-          DATABASE_URL: "${{ steps.create_neon_branch.outputs.db_url_with_pooler }}"
+#          DATABASE_URL: "${{ steps.create_neon_branch.outputs.db_url_with_pooler }}"
           # OR to use unpooled connection
-          # DATABASE_URL: "${{ steps.create_neon_branch.outputs.db_url }}"
+          DATABASE_URL: "${{ steps.create_neon_branch.outputs.db_url }}"
 
   # Following the step above, which runs database migrations, you may want to check
   # for schema changes in your database. We recommend using the following action to
@@ -65,15 +72,15 @@ jobs:
   # you also need to give permissions to the workflow job to be able to post comments
   # and read your repository contents. Add the following permissions to the workflow job:
   #
-permissions:
- contents: read
- pull-requests: write
   #
   # You can also check out https://github.com/neondatabase/schema-diff-action for more
   # information on how to use the schema diff action.
   # You can uncomment the lines below to enable the schema diff action.
       - name: Post Schema Diff Comment to PR
         uses: neondatabase/schema-diff-action@v1
+#        permissions:
+#          contents: read
+#          pull-requests: write
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
           compare_branch: preview/pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
